@@ -1,17 +1,17 @@
 {
-  "name": "keystore_cli",
+  "name": "evm_keystore_cli",
   "version": "0.1.0",
   "description": "Headless custodian for keystore_module: creates, imports, exports and deletes accounts over `logosctl call`. Every other headless surface only reads which accounts exist.",
   "author": "Logos Core Team",
   "type": "core",
   "interface": "cdylib",
   "category": "wallet",
-  "main": "keystore_cli_plugin",
+  "main": "evm_keystore_cli_plugin",
   "dependencies": ["keystore_module"],
   "include": [],
   "capabilities": [],
   "codegen": {
-    "rust": { "crate": "rust-lib", "trait": "KeystoreCliModule", "source": "src/glue.rs" }
+    "rust": { "crate": "rust-lib", "trait": "EvmKeystoreCliModule", "source": "src/glue.rs" }
   },
   "nix": {
     "external_libraries": [],

@@ -1,4 +1,4 @@
-name: keystore-cli Doc-Tests
+name: evm-keystore-cli Doc-Tests
 
 # Runs this repo's executable doc-test(s) end-to-end via the shared `doctest`
 # CLI (github:logos-co/logos-doctest) on every PR and push to main, publishes a
@@ -27,7 +27,7 @@ concurrency:
 
 jobs:
   doctests:
-    name: keystore-cli doc-tests (${{ matrix.os }})
+    name: evm-keystore-cli doc-tests (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -74,10 +74,10 @@ jobs:
       - name: Run doc-tests
         run: |
           nix run github:logos-co/logos-doctest -- run \
-            doctests/keystore-cli-headless.test.yaml \
+            doctests/evm-keystore-cli-headless.test.yaml \
             --verbose \
             --continue-on-fail \
-            --release-for logos-keystore-cli=${{ steps.commit.outputs.sha }} \
+            --release-for logos-evm-keystore-cli=${{ steps.commit.outputs.sha }} \
             --report "${{ runner.temp }}/doctest-report.html"
 
       - name: Stage report for upload
@@ -208,7 +208,7 @@ jobs:
             const marker = "<!-- doctest-report-links -->";
             const body =
               `${marker}\n` +
-              `### 📊 keystore-module doc-test report\n\n` +
+              `### 📊 evm-keystore-cli doc-test report\n\n` +
               `This commit, run end-to-end and rendered with the commands and their output ` +
               `(commit \`${context.sha.slice(0,7)}\`):\n\n` +
               `${links}\n\n` +

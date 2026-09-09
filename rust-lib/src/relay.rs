@@ -38,7 +38,7 @@ pub fn holds(identity: &Value, me: &str, role: &str) -> bool {
 }
 
 pub fn not_custodian(hint: &str) -> String {
-    format!("not authorized: keystore_cli is not a configured custodian. Run: {hint}")
+    format!("not authorized: evm_keystore_cli is not a configured custodian. Run: {hint}")
 }
 
 /// A keystore reply, with its one opaque refusal turned into a sentence that names the
@@ -76,13 +76,13 @@ mod tests {
 
     #[test]
     fn the_hint_is_total_safe() {
-        let id = json!({ "approvers": ["signer_ui"], "custodians": ["keystore_ui"] });
+        let id = json!({ "approvers": ["evm_signer_ui"], "custodians": ["evm_keystore_ui"] });
         assert_eq!(
-            configure_hint(&id, "keystore_cli", "custodians"),
-            r#"logosctl call keystore_module configure '{"approvers":["signer_ui"],"custodians":["keystore_ui","keystore_cli"]}'"#
+            configure_hint(&id, "evm_keystore_cli", "custodians"),
+            r#"logosctl call keystore_module configure '{"approvers":["evm_signer_ui"],"custodians":["evm_keystore_ui","evm_keystore_cli"]}'"#
         );
-        let already = json!({ "approvers": [], "custodians": ["keystore_cli"] });
-        assert!(configure_hint(&already, "keystore_cli", "custodians").contains(r#""custodians":["keystore_cli"]"#));
+        let already = json!({ "approvers": [], "custodians": ["evm_keystore_cli"] });
+        assert!(configure_hint(&already, "evm_keystore_cli", "custodians").contains(r#""custodians":["evm_keystore_cli"]"#));
     }
 
     #[test]
@@ -91,7 +91,7 @@ mod tests {
         let out = translate_refusal(r#"{"ok":false,"error":"not authorized"}"#, || hint.to_string());
         let v: Value = serde_json::from_str(&out).unwrap();
         assert_eq!(v["ok"], false);
-        assert!(v["error"].as_str().unwrap().starts_with("not authorized: keystore_cli is not a configured custodian. Run: "));
+        assert!(v["error"].as_str().unwrap().starts_with("not authorized: evm_keystore_cli is not a configured custodian. Run: "));
         assert!(v["error"].as_str().unwrap().ends_with(hint));
 
         let other = r#"{"ok":false,"error":"word count must be 12/15/18/21/24, got 13"}"#;
@@ -104,8 +104,8 @@ mod tests {
 
     #[test]
     fn holds_reads_the_role_list() {
-        let id = json!({ "approvers": ["signer_ui"], "custodians": ["keystore_ui", "keystore_cli"] });
-        assert!(holds(&id, "keystore_cli", "custodians"));
-        assert!(!holds(&id, "keystore_cli", "approvers"));
+        let id = json!({ "approvers": ["evm_signer_ui"], "custodians": ["evm_keystore_ui", "evm_keystore_cli"] });
+        assert!(holds(&id, "evm_keystore_cli", "custodians"));
+        assert!(!holds(&id, "evm_keystore_cli", "approvers"));
     }
 }

@@ -1,16 +1,16 @@
-//! Logos glue for `keystore_cli`: every Tier D method of `keystore_module`, relayed
+//! Logos glue for `evm_keystore_cli`: every Tier D method of `keystore_module`, relayed
 //! under this module's identity so a headless operator can hold the custodian role.
 
 use crate::relay::{configure_hint, holds, not_custodian, scrub, strip_file_newline, translate_refusal};
 use serde_json::{json, Value};
 
-const ME: &str = "keystore_cli";
+const ME: &str = "evm_keystore_cli";
 
-pub trait KeystoreCliModule: Send + 'static {
+pub trait EvmKeystoreCliModule: Send + 'static {
     /// `{ ok, held, identity, approvers, custodians, hint }`.
     fn status(&mut self) -> String;
 
-    // Tier D — admitted only once `configure` names keystore_cli a custodian.
+    // Tier D — admitted only once `configure` names evm_keystore_cli a custodian.
     fn create_mnemonic(&mut self, words: i64) -> String;
     fn import_mnemonic(&mut self, params_json: String) -> String;
     fn derive_next_account(&mut self, params_json: String) -> String;
@@ -45,7 +45,7 @@ pub trait KeystoreCliModule: Send + 'static {
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/generated/provider_gen.rs"));
 
 #[derive(Default)]
-struct KeystoreCliModuleImpl;
+struct EvmKeystoreCliModuleImpl;
 
 fn unreachable(e: impl std::fmt::Debug) -> String {
     json!({ "ok": false, "error": format!("keystore unreachable: {e:?}") }).to_string()
@@ -78,7 +78,7 @@ fn with_secret<T>(secret: &mut String, f: impl FnOnce(&str) -> T) -> T {
     out
 }
 
-impl KeystoreCliModule for KeystoreCliModuleImpl {
+impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     fn status(&mut self) -> String {
         let id = identity();
         let held = holds(&id, ME, "custodians");
@@ -193,5 +193,5 @@ impl KeystoreCliModule for KeystoreCliModuleImpl {
 
 #[no_mangle]
 pub extern "Rust" fn logos_module_install() {
-    install::<KeystoreCliModuleImpl>();
+    install::<EvmKeystoreCliModuleImpl>();
 }

@@ -1,4 +1,4 @@
-//! keystore_cli — the headless custodian for `keystore_module`.
+//! evm_keystore_cli — the headless custodian for `keystore_module`.
 
 pub mod relay;
 

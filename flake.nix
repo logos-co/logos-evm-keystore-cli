@@ -1,5 +1,5 @@
 {
-  description = "keystore_cli — the headless custodian for keystore_module, driven over logosctl.";
+  description = "evm_keystore_cli — the headless custodian for keystore_module, driven over logosctl.";
 
   inputs = {
     logos-module-builder.url = "github:logos-co/logos-module-builder";

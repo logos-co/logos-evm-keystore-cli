@@ -1,12 +1,12 @@
-# keystore_cli
+# evm_keystore_cli
 
-The headless custodian for `keystore_module` — what `keystore_ui` is in Basecamp, for a
+The headless custodian for `keystore_module` — what `evm_keystore_ui` is in Basecamp, for a
 `logosctl` daemon that has no window.
 
 Every mutation of the keystore — creating, importing, deriving, renaming, exporting and
 deleting accounts — is admitted only to a configured **custodian**, and
 `logosctl call keystore_module import_private_key …` is refused on purpose: the CLI is the
-host anchor, not a named module. `keystore_cli` is a named module. It relays every one of the
+host anchor, not a named module. `evm_keystore_cli` is a named module. It relays every one of the
 keystore's seventeen gated methods under its own identity, with the same names and the same
 parameters, and turns the keystore's one opaque refusal into a sentence that names the fix.
 
@@ -14,15 +14,15 @@ parameters, and turns the keystore's one opaque refusal into a sentence that nam
 
 ```bash
 # once per daemon — configure is TOTAL, so restate the GUI surfaces alongside
-logosctl call keystore_module configure '{"approvers":["signer_ui","signer_cli"],"custodians":["keystore_ui","keystore_cli"]}'
-logosctl module load keystore_cli
+logosctl call keystore_module configure '{"approvers":["evm_signer_ui","evm_signer_cli"],"custodians":["evm_keystore_ui","evm_keystore_cli"]}'
+logosctl module load evm_keystore_cli
 
 umask 077; printf '%s\n' 'vault password' > /run/user/501/pw
-logosctl call keystore_cli create_mnemonic 12
-logosctl call keystore_cli import_mnemonic @import.json      # {"phrase":…,"password":…,"storage":"extkey","groupPassword":…}
-logosctl call keystore_cli import_private_key <hex> @/run/user/501/pw
-logosctl call keystore_cli set_label <address> str:Treasury @/run/user/501/pw
-logosctl call keystore_cli list_accounts
+logosctl call evm_keystore_cli create_mnemonic 12
+logosctl call evm_keystore_cli import_mnemonic @import.json      # {"phrase":…,"password":…,"storage":"extkey","groupPassword":…}
+logosctl call evm_keystore_cli import_private_key <hex> @/run/user/501/pw
+logosctl call evm_keystore_cli set_label <address> str:Treasury @/run/user/501/pw
+logosctl call evm_keystore_cli list_accounts
 ```
 
 ## Methods
@@ -55,7 +55,7 @@ construction; this module knows its own standing, so it says which it was.
 The daemon logs only the argument count of a call, never a value; this module never logs,
 emits or stores a secret, and wipes its copies after each call.
 
-**Do not `logosctl watch keystore_cli`** (or `keystore_module`) on a shared terminal: the daemon
+**Do not `logosctl watch evm_keystore_cli`** (or `keystore_module`) on a shared terminal: the daemon
 publishes every method reply as a `__logos_call_complete__` event on the module's channel, and
 a `create_mnemonic` reply is a recovery phrase. This is a property of the platform's call
 plane, not of this module; it applies to the keystore itself equally.
@@ -71,7 +71,7 @@ plane, not of this module; it applies to the keystore itself equally.
 
 ```bash
 nix build .#default            # the plugin
-nix build .#install            # modules/keystore_cli/ for a logosctl session
+nix build .#install            # modules/evm_keystore_cli/ for a logosctl session
 nix build .#lgx-portable       # an installable .lgx (the -dev variant a daemon refuses is .#lgx)
 (cd rust-lib && cargo test --no-default-features)   # the Logos-free helpers
 ./doctests/run.sh              # the headless spec, end to end against a real daemon
