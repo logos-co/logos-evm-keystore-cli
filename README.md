@@ -25,6 +25,10 @@ logosctl call evm_keystore_cli set_label <address> str:Treasury @/run/user/501/p
 logosctl call evm_keystore_cli list_accounts
 ```
 
+Driving the wallet itself headlessly — the send that spends what is imported here — is covered in
+the [logos-eth-wallet-backend README](https://github.com/logos-co/logos-eth-wallet-backend#headless-operation-logosctl),
+*Headless operation*.
+
 ## Methods
 
 Gated, one per entry of the keystore's Tier D registry: `create_mnemonic`,
