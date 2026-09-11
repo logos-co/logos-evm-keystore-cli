@@ -59,10 +59,24 @@ construction; this module knows its own standing, so it says which it was.
 The daemon logs only the argument count of a call, never a value; this module never logs,
 emits or stores a secret, and wipes its copies after each call.
 
-**Do not `logosctl watch evm_keystore_cli`** (or `keystore_module`) on a shared terminal: the daemon
+**On a daemon predating the completion-channel reservation, do not
+`logosctl watch evm_keystore_cli`** (or `keystore_module`) on a shared terminal: such a daemon
 publishes every method reply as a `__logos_call_complete__` event on the module's channel, and
-a `create_mnemonic` reply is a recovery phrase. This is a property of the platform's call
-plane, not of this module; it applies to the keystore itself equally.
+a `create_mnemonic` reply is a recovery phrase. That was a property of the platform's call
+plane, not of this module, and it applied to the keystore itself equally.
+
+logos-protocol now **reserves** that name — a subscriber cannot ask for it, and the no-filter
+form of `watch` does not carry it — so a bare watch shows only the module's own events. The
+change is **not** in `0.3.0-rc.1` or any earlier release, so check the daemon you actually run
+rather than a version string:
+
+```bash
+logosctl watch keystore_module --json &   # then call any method
+# a line carrying "event":"__logos_call_complete__" means this daemon still relays replies
+```
+
+`--event <name>` stays the right habit either way: it keeps the stream to what a human needs
+and does not depend on the daemon's version.
 
 ## What is deliberately absent
 
