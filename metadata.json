@@ -7,7 +7,9 @@
   "interface": "cdylib",
   "category": "wallet",
   "main": "evm_keystore_cli_plugin",
-  "dependencies": ["keystore_module"],
+  "dependencies": [
+    { "name": "keystore_module", "version": "~0.1.0" }
+  ],
   "include": [],
   "capabilities": [],
   "codegen": {
