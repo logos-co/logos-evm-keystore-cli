@@ -1,7 +1,7 @@
 //! Logos glue for `evm_keystore_cli`: every Tier D method of `keystore_module`, relayed
 //! under this module's identity so a headless operator can hold the custodian role.
 
-use crate::relay::{configure_hint, holds, not_custodian, scrub, strip_file_newline, translate_refusal};
+use crate::relay::{holds, not_custodian, policy_hint, scrub, strip_file_newline, translate_refusal, KEYSTORE_METHODS};
 use serde_json::{json, Value};
 
 const ME: &str = "evm_keystore_cli";
@@ -10,7 +10,7 @@ pub trait EvmKeystoreCliModule: Send + 'static {
     /// `{ ok, held, identity, approvers, custodians, hint }`.
     fn status(&mut self) -> String;
 
-    // Tier D — admitted only once `configure` names evm_keystore_cli a custodian.
+    // Tier D — admitted once the access policy grants evm_keystore_cli these methods.
     fn create_mnemonic(&mut self, words: i64) -> String;
     fn import_mnemonic(&mut self, params_json: String) -> String;
     fn derive_next_account(&mut self, params_json: String) -> String;
@@ -61,7 +61,7 @@ fn identity() -> Value {
 }
 
 fn hint() -> String {
-    configure_hint(&identity(), ME, "custodians")
+    policy_hint(ME, KEYSTORE_METHODS)
 }
 
 fn relay(reply: Result<String, impl std::fmt::Debug>) -> String {
@@ -88,7 +88,7 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
             "identity": id.get("identity").cloned().unwrap_or(Value::Null),
             "approvers": id.get("approvers").cloned().unwrap_or(json!([])),
             "custodians": id.get("custodians").cloned().unwrap_or(json!([])),
-            "hint": if held { Value::Null } else { Value::String(configure_hint(&id, ME, "custodians")) },
+            "hint": if held { Value::Null } else { Value::String(hint()) },
         })
         .to_string()
     }

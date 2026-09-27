@@ -4,17 +4,39 @@ The headless custodian for `keystore_module` — what `evm_keystore_ui` is in Ba
 `logosctl` daemon that has no window.
 
 Every mutation of the keystore — creating, importing, deriving, renaming, exporting and
-deleting accounts — is admitted only to a configured **custodian**, and
+deleting accounts — is admitted only to a **custodian**, and
 `logosctl call keystore_module import_private_key …` is refused on purpose: the CLI is the
-host anchor, not a named module. `evm_keystore_cli` is a named module. It relays every one of the
+host anchor, not a named module. The keystore's built-in custodian is `evm_keystore_ui`; any
+other comes from the deployer's access policy. `evm_keystore_cli` is a named module. It relays every one of the
 keystore's seventeen gated methods under its own identity, with the same names and the same
 parameters, and turns the keystore's one opaque refusal into a sentence that names the fix.
 
 ## A session
 
+The daemon's access policy grants `evm_keystore_cli` the keystore methods it relays, as a
+**list**. A `"*"` grant would not do: the keystore admits a mutation only when the runtime
+checked the call against a list of methods, or when it comes from its built-in custodian.
+`"*"` and `"@op:*"` leave every other caller, operators included, to the keystore's own
+roles. The policy is set before the daemon starts; with a `keystore_module` rule of your
+own, add only the `evm_keystore_cli` entry.
+
+```yaml
+# daemon.yaml
+access_policy: |
+  {"version": 2, "mode": "explicit", "restrictions": {"keystore_module": {"allowedCallers": {
+    "evm_keystore_cli": ["create_mnemonic", "import_mnemonic", "import_private_key",
+      "import_keystore_json", "export_keystore_json", "change_password", "set_label",
+      "set_group_label", "delete_account", "derive_next_account", "derive_account_at",
+      "preview_addresses", "create_unrelated_account", "forget_derivation", "remove_group",
+      "settle", "remove_unexplained", "list_accounts", "get_labels", "get_group_labels",
+      "list_groups", "list_derivation_keys", "get_provenance", "caller_identity"],
+    "*": "*", "@op:*": "*"}}}}
+```
+
 ```bash
-# once per daemon — configure is TOTAL, so restate the GUI surfaces alongside
-logosctl call keystore_module configure '{"approvers":["evm_signer_ui","evm_signer_cli"],"custodians":["evm_keystore_ui","evm_keystore_cli"]}'
+logosctl daemon config set ./daemon.yaml     # before the daemon starts
+logosctl daemon start --detach
+logosctl module load keystore_module
 logosctl module load evm_keystore_cli
 
 umask 077; printf '%s\n' 'vault password' > /run/user/501/pw
@@ -40,7 +62,9 @@ see its `docs/specs.md`.
 
 Ungated, relayed so one module covers the session: `list_accounts`, `get_labels`,
 `get_group_labels`, `list_groups`, `list_derivation_keys`, `get_provenance`,
-`caller_identity`. And `status()` → `{ok, held, identity, approvers, custodians, hint}`.
+`caller_identity`. And `status()` → `{ok, held, identity, approvers, custodians, hint}`:
+`held` is true when the keystore saw this module's call as checked against the policy's list
+(or it is the built-in custodian), and otherwise `hint` is the access policy that grants it.
 
 One deviation: `delete_account` answers `{ok}` / `{ok:false, error}` rather than the
 keystore's bare `bool`. The keystore cannot tell a wrong password from a refusal there by
@@ -80,8 +104,8 @@ and does not depend on the daemon's version.
 
 ## What is deliberately absent
 
-- **No self-enrolment.** `configure` is ungated and total; the operator names the roles and
-  `status` says what to run.
+- **No self-enrolment.** The custodian's methods come only from the access policy, which
+  the daemon takes before it starts; `status` shows the policy that would grant them.
 - **No events.** `logosctl watch keystore_module` already shows `accounts_changed`
   verbatim; a relay would only duplicate it.
 
