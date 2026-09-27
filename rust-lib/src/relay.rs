@@ -8,37 +8,44 @@ pub fn strip_file_newline(s: &str) -> &str {
     s.strip_suffix("\r\n").or_else(|| s.strip_suffix('\n')).unwrap_or(s)
 }
 
-/// The exact `configure` command that adds `me` to `role` while keeping every name
-/// already in force — `configure` is total, so a hint naming only `me` would strip
-/// the GUI surfaces.
-pub fn configure_hint(identity: &Value, me: &str, role: &str) -> String {
-    let list = |key: &str| -> Vec<String> {
-        identity
-            .get(key)
-            .and_then(Value::as_array)
-            .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
-            .unwrap_or_default()
-    };
-    let mut approvers = list("approvers");
-    let mut custodians = list("custodians");
-    let target = if role == "approvers" { &mut approvers } else { &mut custodians };
-    if !target.iter().any(|n| n == me) {
-        target.push(me.to_string());
-    }
-    let doc = json!({ "approvers": approvers, "custodians": custodians });
-    format!("logosctl call keystore_module configure '{doc}'")
+/// Every keystore method this module relays, and so the list the deployer's access policy
+/// grants it at `keystore_module`. A list: a `"*"` grant is not scoped, and the keystore
+/// admits Tier D only on a scoped call or from its built-in custodian.
+pub const KEYSTORE_METHODS: &[&str] = &[
+    "create_mnemonic", "import_mnemonic", "import_private_key", "import_keystore_json",
+    "export_keystore_json", "change_password", "set_label", "set_group_label", "delete_account",
+    "derive_next_account", "derive_account_at", "preview_addresses", "create_unrelated_account",
+    "forget_derivation", "remove_group", "settle", "remove_unexplained",
+    "list_accounts", "get_labels", "get_group_labels", "list_groups", "list_derivation_keys",
+    "get_provenance", "caller_identity",
+];
+
+/// The access policy granting `me` its `methods` at keystore_module, which leaves every other
+/// caller, operators included, to the keystore's own roles. With a keystore_module rule of
+/// your own, add only the `me` entry.
+pub fn policy_hint(me: &str, methods: &[&str]) -> String {
+    let mut callers = serde_json::Map::new();
+    callers.insert(me.to_string(), json!(methods));
+    callers.insert("*".to_string(), json!("*"));
+    callers.insert("@op:*".to_string(), json!("*"));
+    let doc = json!({ "version": 2, "mode": "explicit",
+                      "restrictions": { "keystore_module": { "allowedCallers": Value::Object(callers) } } });
+    format!("grant it in the daemon's access_policy and restart the daemon: {doc}")
 }
 
+/// Whether the keystore admits `me` in `role`: the runtime checked its call against a method
+/// list the policy grants it (`scoped`), or it is the keystore's built-in holder of `role`.
 pub fn holds(identity: &Value, me: &str, role: &str) -> bool {
-    identity
-        .get(role)
-        .and_then(Value::as_array)
-        .map(|a| a.iter().any(|v| v.as_str() == Some(me)))
-        .unwrap_or(false)
+    identity.get("scoped").and_then(Value::as_bool) == Some(true)
+        || identity
+            .get(role)
+            .and_then(Value::as_array)
+            .map(|a| a.iter().any(|v| v.as_str() == Some(me)))
+            .unwrap_or(false)
 }
 
 pub fn not_custodian(hint: &str) -> String {
-    format!("not authorized: evm_keystore_cli is not a configured custodian. Run: {hint}")
+    format!("not authorized: evm_keystore_cli is not granted the custodian's methods; {hint}")
 }
 
 /// A keystore reply, with its one opaque refusal turned into a sentence that names the
@@ -75,23 +82,40 @@ mod tests {
     }
 
     #[test]
-    fn the_hint_is_total_safe() {
-        let id = json!({ "approvers": ["evm_signer_ui"], "custodians": ["evm_keystore_ui"] });
-        assert_eq!(
-            configure_hint(&id, "evm_keystore_cli", "custodians"),
-            r#"logosctl call keystore_module configure '{"approvers":["evm_signer_ui"],"custodians":["evm_keystore_ui","evm_keystore_cli"]}'"#
-        );
-        let already = json!({ "approvers": [], "custodians": ["evm_keystore_cli"] });
-        assert!(configure_hint(&already, "evm_keystore_cli", "custodians").contains(r#""custodians":["evm_keystore_cli"]"#));
+    fn the_hint_is_a_policy_granting_every_relayed_method() {
+        let hint = policy_hint("evm_keystore_cli", KEYSTORE_METHODS);
+        let doc: Value = serde_json::from_str(&hint[hint.find('{').unwrap()..]).unwrap();
+        assert_eq!(doc["version"], 2);
+        assert_eq!(doc["mode"], "explicit");
+        let callers = &doc["restrictions"]["keystore_module"]["allowedCallers"];
+        assert_eq!(callers["evm_keystore_cli"], json!(KEYSTORE_METHODS));
+        assert_eq!(callers["*"], "*");
+        assert_eq!(callers["@op:*"], "*");
+        assert_eq!(callers.as_object().unwrap().len(), 3);
+    }
+
+    #[test]
+    fn the_grant_names_every_gated_method_once() {
+        for m in ["create_mnemonic", "import_mnemonic", "import_private_key", "import_keystore_json",
+                  "export_keystore_json", "change_password", "set_label", "set_group_label",
+                  "delete_account", "derive_next_account", "derive_account_at", "preview_addresses",
+                  "create_unrelated_account", "forget_derivation", "remove_group", "settle",
+                  "remove_unexplained", "caller_identity"] {
+            assert!(KEYSTORE_METHODS.contains(&m), "{m} missing");
+        }
+        let mut sorted = KEYSTORE_METHODS.to_vec();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), KEYSTORE_METHODS.len());
     }
 
     #[test]
     fn only_the_opaque_refusal_is_translated() {
-        let hint = "logosctl call keystore_module configure '{}'";
+        let hint = "grant it in the daemon's access_policy and restart the daemon: {}";
         let out = translate_refusal(r#"{"ok":false,"error":"not authorized"}"#, || hint.to_string());
         let v: Value = serde_json::from_str(&out).unwrap();
         assert_eq!(v["ok"], false);
-        assert!(v["error"].as_str().unwrap().starts_with("not authorized: evm_keystore_cli is not a configured custodian. Run: "));
+        assert!(v["error"].as_str().unwrap().starts_with("not authorized: evm_keystore_cli is not granted the custodian's methods; "));
         assert!(v["error"].as_str().unwrap().ends_with(hint));
 
         let other = r#"{"ok":false,"error":"word count must be 12/15/18/21/24, got 13"}"#;
@@ -103,9 +127,13 @@ mod tests {
     }
 
     #[test]
-    fn holds_reads_the_role_list() {
-        let id = json!({ "approvers": ["evm_signer_ui"], "custodians": ["evm_keystore_ui", "evm_keystore_cli"] });
-        assert!(holds(&id, "evm_keystore_cli", "custodians"));
-        assert!(!holds(&id, "evm_keystore_cli", "approvers"));
+    fn holds_is_a_scoped_call_or_the_built_in_role() {
+        let scoped = json!({ "scoped": true, "custodians": ["evm_keystore_ui"] });
+        assert!(holds(&scoped, "evm_keystore_cli", "custodians"));
+        let unscoped = json!({ "scoped": false, "custodians": ["evm_keystore_ui"] });
+        assert!(!holds(&unscoped, "evm_keystore_cli", "custodians"));
+        assert!(holds(&unscoped, "evm_keystore_ui", "custodians"));
+        assert!(!holds(&unscoped, "evm_keystore_ui", "approvers"));
+        assert!(!holds(&Value::Null, "evm_keystore_cli", "custodians"));
     }
 }
