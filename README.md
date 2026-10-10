@@ -48,12 +48,16 @@ Bitcoin wallets and kept phrases, also gated: `import_bitcoin` (a phrase, a `fam
 of the phrase; `origin: "created"` for a phrase made for this wallet, or a restored wallet's
 `birthday`, the day it was first used as `YYYY-MM-DD`, so an app that opens it knows where to
 start looking for its coins), `show_phrase` (`{phrase, password}`) and `forget_phrase` (`{phrase}`).
+A wallet whose key is on a device keeps its database key in the keystore too, made at its first open
+under a password the person sets: `device_wallets` lists them, and `forget_device_wallet`
+(`{signer, account}`) forgets one, the way out of a forgotten password.
 `import_mnemonic` takes the same `keepPhrase`, or `keptPhrase` with its `phrasePassword`, for an
 EVM wallet. Pass the documents that carry passwords as `@file`.
 
 The signer manager's custodian methods, relayed as this module: `access_requests`,
 `show_access(handle)` (the manager's `acknowledge_access`), `approve_access` (`{handle, bundle_id,
-group?, password, unlock?}`, as `@file`), `reject_access(handle)`, `unlock` (`{account, password,
+group?, password, unlock?, birthday?}`, as `@file`: a device wallet's first open sets its data
+password, with the day it was first used), `reject_access(handle)`, `unlock` (`{account, password,
 ttlMs?, count?, apps, confirm?}`, as `@file`), `lock` (`{account?}`, everything for `{}`),
 `unlocked`, `open_accounts`, `close_account` (`{group, module}`).
 
