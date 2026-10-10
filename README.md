@@ -1,7 +1,7 @@
 # evm_keystore_cli
 
-The headless custodian for `keystore_module` — what `evm_keystore_ui` is in Basecamp, for a
-`logosctl` daemon that has no window.
+The headless custodian for `keystore_module` and `signer_manager_module` — what `evm_keystore_ui`
+is in Basecamp, for a `logosctl` daemon that has no window.
 
 Every mutation of the keystore — creating, importing, deriving, renaming, exporting and
 deleting accounts — is admitted only to a configured **custodian**, and
@@ -9,6 +9,11 @@ deleting accounts — is admitted only to a configured **custodian**, and
 host anchor, not a named module. `evm_keystore_cli` is a named module. It relays every one of the
 keystore's seventeen gated methods under its own identity, with the same names and the same
 parameters, and turns the keystore's one opaque refusal into a sentence that names the fix.
+
+It also decides apps' requests to the [signer manager](https://github.com/logos-co/logos-signer-manager-module)
+once the manager names it a custodian: an app asks to **open** a Bitcoin wallet, and receives its
+descriptors and database key, or asks for an account to stay **unlocked** on terms the person
+decides. The person's own unlocks, locks and closes go through the same calls.
 
 ## A session
 
@@ -38,9 +43,23 @@ Gated, one per entry of the keystore's Tier D registry: `create_mnemonic`,
 `remove_group`, `settle`, `remove_unexplained`. Parameters and replies are the keystore's —
 see its `docs/specs.md`.
 
+Bitcoin wallets and kept phrases, also gated: `import_bitcoin` (a phrase, a `family` and a
+`chain`, optionally `keepPhrase: {password}`, or `keptPhrase` with its `phrasePassword` in place
+of the phrase), `show_phrase` (`{phrase, password}`) and `forget_phrase` (`{phrase}`).
+`import_mnemonic` takes the same `keepPhrase`, or `keptPhrase` with its `phrasePassword`, for an
+EVM wallet. Pass the documents that carry passwords as `@file`.
+
+The signer manager's custodian methods, relayed as this module: `access_requests`,
+`show_access(handle)` (the manager's `acknowledge_access`), `approve_access` (`{handle, bundle_id,
+group?, password, unlock?}`, as `@file`), `reject_access(handle)`, `unlock` (`{account, password,
+ttlMs?, count?, apps, confirm?}`, as `@file`), `lock` (`{account?}`, everything for `{}`),
+`unlocked`, `open_accounts`, `close_account` (`{group, module}`).
+
 Ungated, relayed so one module covers the session: `list_accounts`, `get_labels`,
-`get_group_labels`, `list_groups`, `list_derivation_keys`, `get_provenance`,
-`caller_identity`. And `status()` → `{ok, held, identity, approvers, custodians, hint}`.
+`get_group_labels`, `list_groups`, `list_derivation_keys`, `get_provenance`, `list_phrases`,
+`caller_identity`. And `status()` → `{ok, held, identity, approvers, custodians, hint,
+manager_held, manager_hint}`: `manager_hint` is the manager's `configure` command that adds this
+module to its custodians while keeping the approvers and the signers.
 
 One deviation: `delete_account` answers `{ok}` / `{ok:false, error}` rather than the
 keystore's bare `bool`. The keystore cannot tell a wrong password from a refusal there by

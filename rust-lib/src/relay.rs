@@ -33,6 +33,45 @@ pub fn configure_hint(identity: &Value, me: &str, role: &str) -> String {
     format!("logosctl call keystore_module configure '{doc}'")
 }
 
+/// The `configure` command that adds `me` to the signer manager's custodians, keeping its
+/// approvers and signers: it is total too, and a document without the signers signs nothing.
+pub fn manager_configure_hint(identity: &Value, me: &str) -> String {
+    let list = |key: &str| -> Vec<String> {
+        identity
+            .get(key)
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
+            .unwrap_or_default()
+    };
+    let mut custodians = list("custodians");
+    if !custodians.iter().any(|n| n == me) {
+        custodians.push(me.to_string());
+    }
+    let mut signers = list("signers");
+    if signers.is_empty() {
+        signers.push("keystore_module".into());
+    }
+    let doc = json!({ "approvers": list("approvers"), "custodians": custodians, "signers": signers });
+    format!("logosctl call signer_manager_module configure '{doc}'")
+}
+
+/// A manager reply, with its opaque refusal turned into the fix, as `translate_refusal` does.
+pub fn translate_manager_refusal(reply: &str, hint: impl FnOnce() -> String) -> String {
+    let Ok(mut v) = serde_json::from_str::<Value>(reply) else {
+        return reply.to_string();
+    };
+    if v.get("ok").and_then(Value::as_bool) == Some(false)
+        && v.get("error").and_then(Value::as_str) == Some("not authorized")
+    {
+        v["error"] = Value::String(format!(
+            "not authorized: evm_keystore_cli is not the signer manager's custodian. Run: {}",
+            hint()
+        ));
+        return v.to_string();
+    }
+    reply.to_string()
+}
+
 pub fn holds(identity: &Value, me: &str, role: &str) -> bool {
     identity
         .get(role)
@@ -91,6 +130,19 @@ mod tests {
         let managed = json!({ "approvers": [], "custodians": [], "managers": ["signer_manager_module"] });
         assert!(configure_hint(&managed, "evm_keystore_cli", "custodians")
             .ends_with(r#"{"approvers":[],"custodians":["evm_keystore_cli"],"managers":["signer_manager_module"]}'"#));
+    }
+
+    #[test]
+    fn the_manager_hint_adds_this_custodian_and_keeps_the_rest() {
+        let id = json!({ "approvers": ["evm_signer_ui"], "custodians": ["evm_keystore_ui"], "signers": ["keystore_module", "ledger_module"] });
+        assert_eq!(
+            manager_configure_hint(&id, "evm_keystore_cli"),
+            r#"logosctl call signer_manager_module configure '{"approvers":["evm_signer_ui"],"custodians":["evm_keystore_ui","evm_keystore_cli"],"signers":["keystore_module","ledger_module"]}'"#
+        );
+        // Nothing read back still names a signer: a total document without one would sign nothing.
+        assert!(manager_configure_hint(&json!({}), "evm_keystore_cli").contains(r#""signers":["keystore_module"]"#));
+        let refused = translate_manager_refusal(r#"{"ok":false,"error":"not authorized"}"#, || "HINT".into());
+        assert!(refused.contains("not the signer manager's custodian. Run: HINT"), "{refused}");
     }
 
     #[test]
