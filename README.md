@@ -45,7 +45,9 @@ see its `docs/specs.md`.
 
 Bitcoin wallets and kept phrases, also gated: `import_bitcoin` (a phrase, a `family` and a
 `chain`, optionally `keepPhrase: {password}`, or `keptPhrase` with its `phrasePassword` in place
-of the phrase), `show_phrase` (`{phrase, password}`) and `forget_phrase` (`{phrase}`).
+of the phrase; `origin: "created"` for a phrase made for this wallet, or a restored wallet's
+`birthday`, the day it was first used as `YYYY-MM-DD`, so an app that opens it knows where to
+start looking for its coins), `show_phrase` (`{phrase, password}`) and `forget_phrase` (`{phrase}`).
 `import_mnemonic` takes the same `keepPhrase`, or `keptPhrase` with its `phrasePassword`, for an
 EVM wallet. Pass the documents that carry passwords as `@file`.
 
