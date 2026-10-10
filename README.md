@@ -13,8 +13,8 @@ parameters, and turns the keystore's one opaque refusal into a sentence that nam
 ## A session
 
 ```bash
-# once per daemon — configure is TOTAL, so restate the GUI surfaces alongside
-logosctl call keystore_module configure '{"approvers":["evm_signer_ui","evm_signer_cli"],"custodians":["evm_keystore_ui","evm_keystore_cli"]}'
+# once per daemon — configure is TOTAL, so restate the GUI surfaces and the signer manager alongside
+logosctl call keystore_module configure '{"approvers":["evm_signer_ui","evm_signer_cli"],"custodians":["evm_keystore_ui","evm_keystore_cli"],"managers":["signer_manager_module"]}'
 logosctl module load evm_keystore_cli
 
 umask 077; printf '%s\n' 'vault password' > /run/user/501/pw

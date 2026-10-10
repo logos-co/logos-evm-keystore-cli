@@ -10,7 +10,7 @@ pub fn strip_file_newline(s: &str) -> &str {
 
 /// The exact `configure` command that adds `me` to `role` while keeping every name
 /// already in force — `configure` is total, so a hint naming only `me` would strip
-/// the GUI surfaces.
+/// the GUI surfaces, and one without the managers would stop the signer manager signing.
 pub fn configure_hint(identity: &Value, me: &str, role: &str) -> String {
     let list = |key: &str| -> Vec<String> {
         identity
@@ -25,7 +25,11 @@ pub fn configure_hint(identity: &Value, me: &str, role: &str) -> String {
     if !target.iter().any(|n| n == me) {
         target.push(me.to_string());
     }
-    let doc = json!({ "approvers": approvers, "custodians": custodians });
+    let mut doc = json!({ "approvers": approvers, "custodians": custodians });
+    // Only where the keystore has the role: an older one refuses a key it does not know.
+    if identity.get("managers").is_some() {
+        doc["managers"] = json!(list("managers"));
+    }
     format!("logosctl call keystore_module configure '{doc}'")
 }
 
@@ -83,6 +87,10 @@ mod tests {
         );
         let already = json!({ "approvers": [], "custodians": ["evm_keystore_cli"] });
         assert!(configure_hint(&already, "evm_keystore_cli", "custodians").contains(r#""custodians":["evm_keystore_cli"]"#));
+        // A keystore with the managers role keeps it: without it, nothing signs.
+        let managed = json!({ "approvers": [], "custodians": [], "managers": ["signer_manager_module"] });
+        assert!(configure_hint(&managed, "evm_keystore_cli", "custodians")
+            .ends_with(r#"{"approvers":[],"custodians":["evm_keystore_cli"],"managers":["signer_manager_module"]}'"#));
     }
 
     #[test]
