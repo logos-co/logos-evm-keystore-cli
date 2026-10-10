@@ -1,0 +1,21 @@
+{
+  "name": "kcli_probe",
+  "version": "1.0.0",
+  "description": "Doc-test fixture: an app that asks the signer manager to open a Bitcoin wallet and to unlock it, method by method, and reports what it was handed.",
+  "author": "Logos Core Team",
+  "type": "core",
+  "interface": "cdylib",
+  "category": "test",
+  "main": "kcli_probe_plugin",
+  "dependencies": ["signer_manager_module"],
+  "include": [],
+  "capabilities": [],
+  "codegen": {
+    "rust": { "crate": "rust-lib", "trait": "KcliProbeModule", "source": "src/glue.rs" }
+  },
+  "nix": {
+    "external_libraries": [],
+    "packages": { "build": [], "runtime": [] },
+    "cmake": { "find_packages": [], "extra_include_dirs": [] }
+  }
+}

@@ -1,13 +1,17 @@
-//! Logos glue for `evm_keystore_cli`: every Tier D method of `keystore_module`, relayed
-//! under this module's identity so a headless operator can hold the custodian role.
+//! Logos glue for `evm_keystore_cli`: every Tier D method of `keystore_module`, and the signer
+//! manager's custodian methods, relayed under this module's identity so a headless operator can
+//! hold both custodian roles.
 
-use crate::relay::{configure_hint, holds, not_custodian, scrub, strip_file_newline, translate_refusal};
+use crate::relay::{
+    configure_hint, holds, manager_configure_hint, not_custodian, scrub, strip_file_newline, translate_manager_refusal,
+    translate_refusal,
+};
 use serde_json::{json, Value};
 
 const ME: &str = "evm_keystore_cli";
 
 pub trait EvmKeystoreCliModule: Send + 'static {
-    /// `{ ok, held, identity, approvers, custodians, hint }`.
+    /// `{ ok, held, identity, approvers, custodians, hint, manager_held, manager_hint }`.
     fn status(&mut self) -> String;
 
     // Tier D — admitted only once `configure` names evm_keystore_cli a custodian.
@@ -29,8 +33,32 @@ pub trait EvmKeystoreCliModule: Send + 'static {
     fn delete_account(&mut self, address: String, password: String) -> String;
     fn change_password(&mut self, address: String, old_password: String, new_password: String) -> String;
     fn set_label(&mut self, address: String, label: String, password: String) -> String;
+    /// A Bitcoin wallet from a phrase, or from a kept one; keeps the phrase when asked.
+    fn import_bitcoin(&mut self, params_json: String) -> String;
+    /// A kept phrase's words: `{ phrase, password }`.
+    fn show_phrase(&mut self, params_json: String) -> String;
+    /// `{ phrase }`: remove a kept phrase.
+    fn forget_phrase(&mut self, params_json: String) -> String;
+
+    // The signer manager's custodian: apps' open and unlock requests, and the person's own unlocks.
+    /// The requests waiting: `{ ok, requests: [{ handle, requester, kind, state, ageMs }] }`.
+    fn access_requests(&mut self) -> String;
+    /// Claim one for display: its lines, the commitment to echo, and what was asked.
+    fn show_access(&mut self, handle: String) -> String;
+    /// Decide it: `{ handle, bundle_id, group?, password, unlock? }`, as a file.
+    fn approve_access(&mut self, params_json: String) -> String;
+    fn reject_access(&mut self, handle: String) -> String;
+    /// The person's own unlock: `{ account, password, ttlMs?, count?, apps, confirm? }`, as a file.
+    fn unlock(&mut self, params_json: String) -> String;
+    /// `{ account? }`, everything for `{}`.
+    fn lock(&mut self, params_json: String) -> String;
+    fn unlocked(&mut self) -> String;
+    fn open_accounts(&mut self) -> String;
+    /// `{ group, module }`: close a wallet opened for an app.
+    fn close_account(&mut self, params_json: String) -> String;
 
     // Ungated reads, relayed so one module covers the whole headless session.
+    fn list_phrases(&mut self) -> String;
     fn list_accounts(&mut self) -> String;
     fn get_labels(&mut self) -> String;
     fn get_group_labels(&mut self) -> String;
@@ -71,6 +99,29 @@ fn relay(reply: Result<String, impl std::fmt::Debug>) -> String {
     }
 }
 
+fn manager_identity() -> Value {
+    modules()
+        .signer_manager_module
+        .caller_identity()
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or(Value::Null)
+}
+
+fn relay_manager(reply: Result<String, impl std::fmt::Debug>) -> String {
+    match reply {
+        Ok(s) => translate_manager_refusal(&s, || manager_configure_hint(&manager_identity(), ME)),
+        Err(e) => json!({ "ok": false, "error": format!("signer manager unreachable: {e:?}") }).to_string(),
+    }
+}
+
+/// A document carrying a password, relayed and then wiped.
+fn with_secret_doc(mut doc: String, f: impl FnOnce(&str) -> String) -> String {
+    let out = f(strip_file_newline(&doc));
+    scrub(&mut doc);
+    out
+}
+
 /// Run `f` on the password as the operator meant it, then wipe the copy we hold.
 fn with_secret<T>(secret: &mut String, f: impl FnOnce(&str) -> T) -> T {
     let out = f(strip_file_newline(secret));
@@ -81,6 +132,7 @@ fn with_secret<T>(secret: &mut String, f: impl FnOnce(&str) -> T) -> T {
 impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     fn status(&mut self) -> String {
         let id = identity();
+        let mid = manager_identity();
         let held = holds(&id, ME, "custodians");
         json!({
             "ok": true,
@@ -89,6 +141,9 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
             "approvers": id.get("approvers").cloned().unwrap_or(json!([])),
             "custodians": id.get("custodians").cloned().unwrap_or(json!([])),
             "hint": if held { Value::Null } else { Value::String(configure_hint(&id, ME, "custodians")) },
+            "manager_held": holds(&mid, ME, "custodians"),
+            "manager_hint": if holds(&mid, ME, "custodians") { Value::Null }
+                            else { Value::String(manager_configure_hint(&mid, ME)) },
         })
         .to_string()
     }
@@ -168,6 +223,51 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
         with_secret(&mut password, |pw| relay(modules().keystore_module.set_label(&address, &label, pw)))
     }
 
+    fn import_bitcoin(&mut self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.import_bitcoin(doc)))
+    }
+    fn show_phrase(&mut self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.show_phrase(doc)))
+    }
+    fn forget_phrase(&mut self, params_json: String) -> String {
+        relay(modules().keystore_module.forget_phrase(strip_file_newline(&params_json)))
+    }
+
+    fn access_requests(&mut self) -> String {
+        relay_manager(modules().signer_manager_module.access_requests())
+    }
+    fn show_access(&mut self, handle: String) -> String {
+        relay_manager(modules().signer_manager_module.acknowledge_access(handle.trim()))
+    }
+    fn approve_access(&mut self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay_manager(modules().signer_manager_module.approve_access(doc)))
+    }
+    fn reject_access(&mut self, handle: String) -> String {
+        match modules().signer_manager_module.reject_access(handle.trim()) {
+            Ok(true) => json!({ "ok": true }).to_string(),
+            Ok(false) => json!({ "ok": false, "error": "reject refused: not the custodian, or no such request" }).to_string(),
+            Err(e) => json!({ "ok": false, "error": format!("signer manager unreachable: {e:?}") }).to_string(),
+        }
+    }
+    fn unlock(&mut self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay_manager(modules().signer_manager_module.unlock(doc)))
+    }
+    fn lock(&mut self, params_json: String) -> String {
+        relay_manager(modules().signer_manager_module.lock(strip_file_newline(&params_json)))
+    }
+    fn unlocked(&mut self) -> String {
+        relay_manager(modules().signer_manager_module.unlocked())
+    }
+    fn open_accounts(&mut self) -> String {
+        relay_manager(modules().signer_manager_module.open_accounts())
+    }
+    fn close_account(&mut self, params_json: String) -> String {
+        relay_manager(modules().signer_manager_module.close_account(strip_file_newline(&params_json)))
+    }
+
+    fn list_phrases(&mut self) -> String {
+        relay(modules().keystore_module.list_phrases())
+    }
     fn list_accounts(&mut self) -> String {
         relay(modules().keystore_module.list_accounts())
     }
