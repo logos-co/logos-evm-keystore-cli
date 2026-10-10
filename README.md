@@ -45,8 +45,9 @@ see its `docs/specs.md`.
 
 Bitcoin wallets and kept phrases, also gated: `import_bitcoin` (a phrase, a `family` and a
 `chain`, optionally `keepPhrase: {password}`, or `keptPhrase` with its `phrasePassword` in place
-of the phrase), `show_phrase` (`{phrase, password}`) and `forget_phrase` (`{phrase}`). Pass the
-documents that carry passwords as `@file`.
+of the phrase), `show_phrase` (`{phrase, password}`) and `forget_phrase` (`{phrase}`).
+`import_mnemonic` takes the same `keepPhrase`, or `keptPhrase` with its `phrasePassword`, for an
+EVM wallet. Pass the documents that carry passwords as `@file`.
 
 The signer manager's custodian methods, relayed as this module: `access_requests`,
 `show_access(handle)` (the manager's `acknowledge_access`), `approve_access` (`{handle, bundle_id,

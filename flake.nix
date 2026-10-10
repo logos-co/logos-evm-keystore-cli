@@ -6,7 +6,7 @@
     # Pinned to the branches that add Bitcoin wallets, kept phrases and the manager, until they
     # reach main.
     keystore_module = {
-      url = "github:logos-co/logos-evm-keystore-module/0e4aa08a9da89a34d17556a2ef0af326b1eccdb1";
+      url = "github:logos-co/logos-evm-keystore-module/15c44cc01550ba1b1a92e0a55ef29f17207b818d";
       inputs.logos-module-builder.follows = "logos-module-builder";
     };
     signer_manager_module = {

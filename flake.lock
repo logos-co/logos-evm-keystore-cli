@@ -160,17 +160,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1791608298,
-        "narHash": "sha256-Hcinrggdza2mz7yrJiQvmSqVecdRxg9lp6IJsa4nl5E=",
+        "lastModified": 1791614675,
+        "narHash": "sha256-eRfjQWbSp3ddMcuv5emTZhE2iP8SeRzhRIf3nMk30hA=",
         "owner": "logos-co",
         "repo": "logos-evm-keystore-module",
-        "rev": "0e4aa08a9da89a34d17556a2ef0af326b1eccdb1",
+        "rev": "15c44cc01550ba1b1a92e0a55ef29f17207b818d",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
         "repo": "logos-evm-keystore-module",
-        "rev": "0e4aa08a9da89a34d17556a2ef0af326b1eccdb1",
+        "rev": "15c44cc01550ba1b1a92e0a55ef29f17207b818d",
         "type": "github"
       }
     },
