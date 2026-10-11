@@ -39,13 +39,18 @@ pub trait EvmKeystoreCliModule: Send + Sync + 'static {
     fn show_phrase(&self, params_json: String) -> String;
     /// `{ phrase }`: remove a kept phrase.
     fn forget_phrase(&self, params_json: String) -> String;
+    /// The device accounts whose wallet has a database key in the keystore.
+    fn device_wallets(&self) -> String;
+    /// `{ signer, account }`: forget a device wallet's database key, the way out of a forgotten password.
+    fn forget_device_wallet(&self, params_json: String) -> String;
 
     // The signer manager's custodian: apps' open and unlock requests, and the person's own unlocks.
     /// The requests waiting: `{ ok, requests: [{ handle, requester, kind, state, ageMs }] }`.
     fn access_requests(&self) -> String;
     /// Claim one for display: its lines, the commitment to echo, and what was asked.
     fn show_access(&self, handle: String) -> String;
-    /// Decide it: `{ handle, bundle_id, group?, password, unlock? }`, as a file.
+    /// Decide it: `{ handle, bundle_id, group?, password, unlock?, birthday? }`, as a file; a device
+    /// wallet's first open sets its data password, with the day it was first used.
     fn approve_access(&self, params_json: String) -> String;
     fn reject_access(&self, handle: String) -> String;
     /// The person's own unlock: `{ account, password, ttlMs?, count?, apps, confirm? }`, as a file.
@@ -231,6 +236,12 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     }
     fn forget_phrase(&self, params_json: String) -> String {
         relay(modules().keystore_module.forget_phrase(strip_file_newline(&params_json)))
+    }
+    fn device_wallets(&self) -> String {
+        relay(modules().keystore_module.device_wallets())
+    }
+    fn forget_device_wallet(&self, params_json: String) -> String {
+        relay(modules().keystore_module.forget_device_wallet(strip_file_newline(&params_json)))
     }
 
     fn access_requests(&self) -> String {
