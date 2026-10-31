@@ -43,6 +43,9 @@ pub trait EvmKeystoreCliModule: Send + Sync + 'static {
     fn device_wallets(&self) -> String;
     /// `{ signer, account }`: forget a device wallet's database key, the way out of a forgotten password.
     fn forget_device_wallet(&self, params_json: String) -> String;
+    /// Move in what an older build left in `keystore/`: `{ ok, accounts, keys, phrases, devices,
+    /// documents, left }` of what moved, `left` being what stays.
+    fn move_older_keystore(&self) -> String;
 
     // The signer manager's custodian: apps' open and unlock requests, and the person's own unlocks.
     /// The requests waiting: `{ ok, requests: [{ handle, requester, kind, state, ageMs }] }`.
@@ -70,6 +73,8 @@ pub trait EvmKeystoreCliModule: Send + Sync + 'static {
     fn list_groups(&self) -> String;
     fn list_derivation_keys(&self) -> String;
     fn get_provenance(&self) -> String;
+    /// What `move_older_keystore` would move, in the same shape.
+    fn older_keystore(&self) -> String;
     fn caller_identity(&self) -> String;
 
     fn on_context_ready(&self, _ctx: &RustModuleContext) {}
@@ -243,6 +248,9 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     fn forget_device_wallet(&self, params_json: String) -> String {
         relay(modules().keystore_module.forget_device_wallet(strip_file_newline(&params_json)))
     }
+    fn move_older_keystore(&self) -> String {
+        relay(modules().keystore_module.move_older_keystore())
+    }
 
     fn access_requests(&self) -> String {
         relay_manager(modules().signer_manager_module.access_requests())
@@ -296,6 +304,9 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     }
     fn get_provenance(&self) -> String {
         relay(modules().keystore_module.get_provenance())
+    }
+    fn older_keystore(&self) -> String {
+        relay(modules().keystore_module.older_keystore())
     }
     fn caller_identity(&self) -> String {
         relay(modules().keystore_module.caller_identity())

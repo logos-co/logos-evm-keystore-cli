@@ -6,9 +6,9 @@ is in Basecamp, for a `logosctl` daemon that has no window.
 Every mutation of the keystore — creating, importing, deriving, renaming, exporting and
 deleting accounts — is admitted only to a configured **custodian**, and
 `logosctl call keystore_module import_private_key …` is refused on purpose: the CLI is the
-host anchor, not a named module. `evm_keystore_cli` is a named module. It relays every one of the
-keystore's seventeen gated methods under its own identity, with the same names and the same
-parameters, and turns the keystore's one opaque refusal into a sentence that names the fix.
+host anchor, not a named module. `evm_keystore_cli` is a named module. It relays the keystore's
+gated methods under its own identity, with the same names and the same parameters, and turns the
+keystore's one opaque refusal into a sentence that names the fix.
 
 It also decides apps' requests to the [signer manager](https://github.com/logos-co/logos-signer-manager-module)
 once the manager names it a custodian: an app asks to **open** a Bitcoin wallet, and receives its
@@ -40,8 +40,14 @@ Gated, one per entry of the keystore's Tier D registry: `create_mnemonic`,
 `import_mnemonic`, `import_private_key`, `import_keystore_json`, `export_keystore_json`,
 `change_password`, `set_label`, `set_group_label`, `delete_account`, `derive_next_account`,
 `derive_account_at`, `preview_addresses`, `create_unrelated_account`, `forget_derivation`,
-`remove_group`, `settle`, `remove_unexplained`. Parameters and replies are the keystore's —
-see its `docs/specs.md`.
+`remove_group`, `settle`, `remove_unexplained`, `move_older_keystore`. Parameters and replies are
+the keystore's — see its `docs/specs.md`. The registry's `import_seed_wallet`, `preview_mnemonic`,
+`set_wallet_name` and `restore_unlock_root` are not relayed yet.
+
+The keystore keeps its files in `keystore/v2/` and does not read what an older build left in
+`keystore/`. `move_older_keystore` moves it in and answers `{ok, accounts, keys, phrases, devices,
+documents, left}` for what moved, `left` being what stays; the ungated `older_keystore` answers the
+same for what a move would bring. With no older keystore both answer zero counts.
 
 Bitcoin wallets and kept phrases, also gated: `import_bitcoin` (a phrase, a `family` and a
 `chain`, optionally `keepPhrase: {password}`, or `keptPhrase` with its `phrasePassword` in place
@@ -63,7 +69,7 @@ ttlMs?, count?, apps, confirm?}`, as `@file`), `lock` (`{account?}`, everything 
 
 Ungated, relayed so one module covers the session: `list_accounts`, `get_labels`,
 `get_group_labels`, `list_groups`, `list_derivation_keys`, `get_provenance`, `list_phrases`,
-`caller_identity`. And `status()` → `{ok, held, identity, approvers, custodians, hint,
+`older_keystore`, `caller_identity`. And `status()` → `{ok, held, identity, approvers, custodians, hint,
 manager_held, manager_hint}`: `manager_hint` is the manager's `configure` command that adds this
 module to its custodians while keeping the approvers and the signers.
 
