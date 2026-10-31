@@ -37,17 +37,28 @@ the [logos-eth-wallet-backend README](https://github.com/logos-co/logos-eth-wall
 ## Methods
 
 Gated, one per entry of the keystore's Tier D registry: `create_mnemonic`,
-`import_mnemonic`, `import_private_key`, `import_keystore_json`, `export_keystore_json`,
-`change_password`, `set_label`, `set_group_label`, `delete_account`, `derive_next_account`,
-`derive_account_at`, `preview_addresses`, `create_unrelated_account`, `forget_derivation`,
-`remove_group`, `settle`, `remove_unexplained`, `move_older_keystore`. Parameters and replies are
-the keystore's — see its `docs/specs.md`. The registry's `import_seed_wallet`, `preview_mnemonic`,
-`set_wallet_name` and `restore_unlock_root` are not relayed yet.
+`import_mnemonic`, `import_seed_wallet`, `import_private_key`, `import_keystore_json`,
+`export_keystore_json`, `change_password`, `set_label`, `set_group_label`, `set_wallet_name`,
+`delete_account`, `derive_next_account`, `derive_account_at`, `preview_addresses`,
+`preview_mnemonic`, `create_unrelated_account`, `forget_derivation`, `remove_group`, `settle`,
+`remove_unexplained`, `move_older_keystore`, `restore_unlock_root`, and the Bitcoin, phrase and
+device methods below. Parameters and replies are the keystore's — see its `docs/specs.md`.
+
+`import_seed_wallet` adds a wallet from a phrase only if it is `sourceGroup`'s, checked before
+anything is written: `import_mnemonic`'s parameters for `family: "evm"`, `import_bitcoin`'s for
+`bitcoin` or `bitcoin_taproot`. `preview_mnemonic` answers what a phrase, or a `keptPhrase` with
+its `phrasePassword`, would derive for a `family` and `chain`, and writes nothing.
+`set_wallet_name` (`{group, label, address?, password?}`) names the wallet — every account file of
+its seed — where `set_group_label` names one file. Pass all four as `@file`: each carries a phrase
+or a password.
 
 The keystore keeps its files in `keystore/v2/` and does not read what an older build left in
 `keystore/`. `move_older_keystore` moves it in and answers `{ok, accounts, keys, phrases, devices,
 documents, left}` for what moved, `left` being what stays; the ungated `older_keystore` answers the
-same for what a move would bring. With no older keystore both answer zero counts.
+same for what a move would bring. With no older keystore both answer zero counts. A wallet made
+before wallets kept an unlock root is named in `list_groups`' `addAgain`, and the signer manager
+cannot unlock it until `restore_unlock_root` adds it again: `{group, phrase | keptPhrase +
+phrasePassword, passphrase?, password}` for a wallet, `{account, password}` for a key, as `@file`.
 
 Bitcoin wallets and kept phrases, also gated: `import_bitcoin` (a phrase, a `family` and a
 `chain`, optionally `keepPhrase: {password}`, or `keptPhrase` with its `phrasePassword` in place

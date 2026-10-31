@@ -17,15 +17,21 @@ pub trait EvmKeystoreCliModule: Send + Sync + 'static {
     // Tier D — admitted only once `configure` names evm_keystore_cli a custodian.
     fn create_mnemonic(&self, words: i64) -> String;
     fn import_mnemonic(&self, params_json: String) -> String;
+    /// A wallet from a phrase only if it is `sourceGroup`'s, checked before anything is written.
+    fn import_seed_wallet(&self, params_json: String) -> String;
     fn derive_next_account(&self, params_json: String) -> String;
     fn derive_account_at(&self, params_json: String) -> String;
     fn preview_addresses(&self, params_json: String) -> String;
+    /// What a phrase, or a kept one with its password, would derive, written nowhere.
+    fn preview_mnemonic(&self, params_json: String) -> String;
     fn create_unrelated_account(&self, params_json: String) -> String;
     fn forget_derivation(&self, params_json: String) -> String;
     fn remove_group(&self, params_json: String) -> String;
     fn settle(&self) -> String;
     fn remove_unexplained(&self, params_json: String) -> String;
     fn set_group_label(&self, params_json: String) -> String;
+    /// `{ group, label, address?, password? }`: name the wallet, every account file of its seed.
+    fn set_wallet_name(&self, params_json: String) -> String;
     fn import_private_key(&self, priv_hex: String, password: String) -> String;
     fn import_keystore_json(&self, key_json: String, password: String, new_password: String) -> String;
     fn export_keystore_json(&self, address: String, password: String) -> String;
@@ -46,6 +52,9 @@ pub trait EvmKeystoreCliModule: Send + Sync + 'static {
     /// Move in what an older build left in `keystore/`: `{ ok, accounts, keys, phrases, devices,
     /// documents, left }` of what moved, `left` being what stays.
     fn move_older_keystore(&self) -> String;
+    /// Add again a wallet made before wallets kept an unlock root, so the manager can unlock it:
+    /// `{ ok, seed }`.
+    fn restore_unlock_root(&self, params_json: String) -> String;
 
     // The signer manager's custodian: apps' open and unlock requests, and the person's own unlocks.
     /// The requests waiting: `{ ok, requests: [{ handle, requester, kind, state, ageMs }] }`.
@@ -164,6 +173,9 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     fn import_mnemonic(&self, params_json: String) -> String {
         relay(modules().keystore_module.import_mnemonic(&params_json))
     }
+    fn import_seed_wallet(&self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.import_seed_wallet(doc)))
+    }
     fn derive_next_account(&self, params_json: String) -> String {
         relay(modules().keystore_module.derive_next_account(&params_json))
     }
@@ -172,6 +184,9 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     }
     fn preview_addresses(&self, params_json: String) -> String {
         relay(modules().keystore_module.preview_addresses(&params_json))
+    }
+    fn preview_mnemonic(&self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.preview_mnemonic(doc)))
     }
     fn create_unrelated_account(&self, params_json: String) -> String {
         relay(modules().keystore_module.create_unrelated_account(&params_json))
@@ -190,6 +205,9 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     }
     fn set_group_label(&self, params_json: String) -> String {
         relay(modules().keystore_module.set_group_label(&params_json))
+    }
+    fn set_wallet_name(&self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.set_wallet_name(doc)))
     }
 
     fn import_private_key(&self, mut priv_hex: String, mut password: String) -> String {
@@ -250,6 +268,9 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
     }
     fn move_older_keystore(&self) -> String {
         relay(modules().keystore_module.move_older_keystore())
+    }
+    fn restore_unlock_root(&self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.restore_unlock_root(doc)))
     }
 
     fn access_requests(&self) -> String {
