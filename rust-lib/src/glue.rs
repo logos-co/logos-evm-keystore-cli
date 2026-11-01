@@ -61,8 +61,8 @@ pub trait EvmKeystoreCliModule: Send + Sync + 'static {
     fn access_requests(&self) -> String;
     /// Claim one for display: its lines, the commitment to echo, and what was asked.
     fn show_access(&self, handle: String) -> String;
-    /// Decide it: `{ handle, bundle_id, group?, password, unlock?, birthday? }`, as a file; a device
-    /// wallet's first open sets its data password, with the day it was first used.
+    /// Decide it: `{ handle, bundle_id, group?, password, unlock? }`, as a file; a device wallet's
+    /// first open sets its data password.
     fn approve_access(&self, params_json: String) -> String;
     fn reject_access(&self, handle: String) -> String;
     /// The person's own unlock: `{ account, password, ttlMs?, count?, apps, confirm? }`, as a file.
