@@ -5,11 +5,11 @@
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     # Pinned commits on main: the keystore at the move of an older build's keystore into v2.
     keystore_module = {
-      url = "github:logos-co/logos-evm-keystore-module/b9403afed94a1c9714c2349a1736dee3f30b125d";
+      url = "github:logos-co/logos-evm-keystore-module/6ab1d08dfc45d0a472d156cf255bd47d79763a5b";
       inputs.logos-module-builder.follows = "logos-module-builder";
     };
     signer_manager_module = {
-      url = "github:logos-co/logos-signer-manager-module/ab2ccfeb2c193dc39bde28c9be9a9c19fdf35ab7";
+      url = "github:logos-co/logos-signer-manager-module/48c106c702446a99c529b1febfcdedf1261e7407";
       inputs.logos-module-builder.follows = "logos-module-builder";
       inputs.keystore_module.follows = "keystore_module";
     };
