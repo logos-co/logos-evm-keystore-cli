@@ -3,13 +3,13 @@
 
   inputs = {
     logos-module-builder.url = "github:logos-co/logos-module-builder";
-    # Pinned commits on main: the keystore at the move of an older build's keystore into v2.
+    # The heads of keystore#40 (one password per wallet) and manager#18; merge commits once they land.
     keystore_module = {
-      url = "github:logos-co/logos-evm-keystore-module/6ab1d08dfc45d0a472d156cf255bd47d79763a5b";
+      url = "github:logos-co/logos-evm-keystore-module/4b820968773b5e59af681f2fc92b7ae913034aeb";
       inputs.logos-module-builder.follows = "logos-module-builder";
     };
     signer_manager_module = {
-      url = "github:logos-co/logos-signer-manager-module/48c106c702446a99c529b1febfcdedf1261e7407";
+      url = "github:logos-co/logos-signer-manager-module/bb5416b573e146cbccdedad5b0ad9bb6966617b8";
       inputs.logos-module-builder.follows = "logos-module-builder";
       inputs.keystore_module.follows = "keystore_module";
     };

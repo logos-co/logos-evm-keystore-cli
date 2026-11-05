@@ -38,7 +38,7 @@ the [logos-eth-wallet-backend README](https://github.com/logos-co/logos-eth-wall
 
 Gated, one per entry of the keystore's Tier D registry: `create_mnemonic`,
 `import_mnemonic`, `import_seed_wallet`, `import_private_key`, `import_keystore_json`,
-`export_keystore_json`, `change_password`, `set_label`, `set_group_label`, `set_wallet_name`,
+`export_keystore_json`, `change_password`, `change_wallet_password`, `opens_wallet`, `set_label`, `set_group_label`, `set_wallet_name`,
 `delete_account`, `derive_next_account`, `derive_account_at`, `preview_addresses`,
 `preview_mnemonic`, `create_unrelated_account`, `forget_derivation`, `remove_group`, `settle`,
 `remove_unexplained`, `move_older_keystore`, `restore_unlock_root`, and the Bitcoin, phrase and
@@ -51,6 +51,13 @@ its `phrasePassword`, would derive for a `family` and `chain`, and writes nothin
 `set_wallet_name` (`{group, label, address?, password?}`) names the wallet — every account file of
 its seed — where `set_group_label` names one file. Pass all four as `@file`: each carries a phrase
 or a password.
+
+One password opens every file of a wallet. `change_wallet_password` (`{seed, passwords,
+newPassword}`) moves each file one of `passwords` opens and answers `{ok, changed, already, left}`;
+`left` names what is still under another password, so call it again with that one added.
+`opens_wallet` (`{seed, password}`) answers `{ok, opens}`: whether the password opens the wallet,
+which adding accounts to it takes. `delete_bitcoin_account` (`{group, password}`) removes a Bitcoin
+account and its file. All three carry passwords, so pass them as `@file`.
 
 The keystore keeps its files in `keystore/v2/` and does not read what an older build left in
 `keystore/`. `move_older_keystore` moves it in and answers `{ok, accounts, keys, phrases, devices,

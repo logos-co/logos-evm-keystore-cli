@@ -38,6 +38,13 @@ pub trait EvmKeystoreCliModule: Send + Sync + 'static {
     /// `{ ok }` rather than the keystore's bare bool, so a refusal can say why.
     fn delete_account(&self, address: String, password: String) -> String;
     fn change_password(&self, address: String, old_password: String, new_password: String) -> String;
+    /// `{ seed, passwords, newPassword }`: every file of a wallet under one password. `left` names
+    /// the files none of `passwords` opened, so the next call adds theirs.
+    fn change_wallet_password(&self, params_json: String) -> String;
+    /// `{ seed, password }`: whether the password opens the wallet, which adding to it takes.
+    fn opens_wallet(&self, params_json: String) -> String;
+    /// `{ group, password }`: remove a Bitcoin account, whose wallet file holds its only key here.
+    fn delete_bitcoin_account(&self, params_json: String) -> String;
     fn set_label(&self, address: String, label: String, password: String) -> String;
     /// A Bitcoin wallet from a phrase, or from a kept one; keeps the phrase when asked.
     fn import_bitcoin(&self, params_json: String) -> String;
@@ -246,6 +253,15 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
                 relay(modules().keystore_module.change_password(&address, old, new))
             })
         })
+    }
+    fn change_wallet_password(&self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.change_wallet_password(doc)))
+    }
+    fn opens_wallet(&self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.opens_wallet(doc)))
+    }
+    fn delete_bitcoin_account(&self, params_json: String) -> String {
+        with_secret_doc(params_json, |doc| relay(modules().keystore_module.delete_bitcoin_account(doc)))
     }
     fn set_label(&self, address: String, label: String, mut password: String) -> String {
         with_secret(&mut password, |pw| relay(modules().keystore_module.set_label(&address, &label, pw)))
