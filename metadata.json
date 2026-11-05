@@ -1,6 +1,6 @@
 {
   "name": "evm_keystore_cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Headless custodian for keystore_module and signer_manager_module: creates, imports, exports and deletes accounts, and decides apps' requests to open or unlock them, over `logosctl call`. Every other headless surface only reads which accounts exist.",
   "author": "Logos Core Team",
   "type": "core",
@@ -9,8 +9,8 @@
   "category": "wallet",
   "main": "evm_keystore_cli_plugin",
   "dependencies": [
-    { "name": "keystore_module", "version": "~0.1.0" },
-    { "name": "signer_manager_module", "version": "~0.1.0" }
+    { "name": "keystore_module", "version": "~0.2.0" },
+    { "name": "signer_manager_module", "version": "~0.2.0" }
   ],
   "include": [],
   "capabilities": [],
