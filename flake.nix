@@ -5,11 +5,11 @@
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     # The heads of keystore#40 (one password per wallet) and manager#18; merge commits once they land.
     keystore_module = {
-      url = "github:logos-co/logos-evm-keystore-module/12121f3db3bb6983f606d997992356b93743941e";
+      url = "github:logos-co/logos-evm-keystore-module/e83a899a1718ed52e3173dc85d06b15b9c68f41a";
       inputs.logos-module-builder.follows = "logos-module-builder";
     };
     signer_manager_module = {
-      url = "github:logos-co/logos-signer-manager-module/588cfb6621087ceb9b09f81c8c09f0e1269cceb0";
+      url = "github:logos-co/logos-signer-manager-module/bd5c84d21ced71246c4bf44d137aa1c597496fb0";
       inputs.logos-module-builder.follows = "logos-module-builder";
       inputs.keystore_module.follows = "keystore_module";
     };

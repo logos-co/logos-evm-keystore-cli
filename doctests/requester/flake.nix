@@ -5,11 +5,11 @@
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     # Pinned to the commits that made the keystore a signer and added the manager.
     keystore_module = {
-      url = "github:logos-co/logos-evm-keystore-module/15c44cc01550ba1b1a92e0a55ef29f17207b818d";
+      url = "github:logos-co/logos-evm-keystore-module/e83a899a1718ed52e3173dc85d06b15b9c68f41a";
       inputs.logos-module-builder.follows = "logos-module-builder";
     };
     signer_manager_module = {
-      url = "github:logos-co/logos-signer-manager-module/ab2ccfeb2c193dc39bde28c9be9a9c19fdf35ab7";
+      url = "github:logos-co/logos-signer-manager-module/bd5c84d21ced71246c4bf44d137aa1c597496fb0";
       inputs.logos-module-builder.follows = "logos-module-builder";
       inputs.keystore_module.follows = "keystore_module";
     };
