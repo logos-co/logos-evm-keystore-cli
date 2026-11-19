@@ -1,6 +1,6 @@
-//! The app half of the evm_keystore_cli doc-test. It asks the signer manager to open a wallet and
-//! to unlock it, keeps each receipt, and reports what it was handed; the CLI decides. Method-driven,
-//! so the spec controls every step.
+//! The app half of the evm_keystore_cli doc-test. It asks the signer manager to open a wallet,
+//! keeps the receipt, and reports what it was handed; the CLI decides. Method-driven, so the spec
+//! controls every step.
 
 use serde_json::{json, Value};
 
@@ -9,8 +9,6 @@ type Receipts = std::sync::Mutex<std::collections::HashMap<String, String>>;
 pub trait KcliProbeModule: Send + 'static {
     /// Ask to open any native segwit wallet on `network`. `{ ok, handle }`; the receipt stays here.
     fn request_open(&mut self, network: String) -> String;
-    /// Ask for `account` to stay unlocked for `count` confirmed signatures of this module's.
-    fn request_unlock(&mut self, account: String, count: i64) -> String;
     /// `{ ok, state, reason?, result? }`: what was handed over, once the person decided.
     fn outcome(&mut self, handle: String) -> String;
     fn on_context_ready(&mut self, _ctx: &RustModuleContext) {}
@@ -57,12 +55,6 @@ impl KcliProbeModule for KcliProbeModuleImpl {
     fn request_open(&mut self, network: String) -> String {
         let p = json!({ "family": "bitcoin", "network": network, "reason": "Doc-test: open a wallet headlessly" });
         self.keep(parse(modules().signer_manager_module.request_open(&p.to_string())))
-    }
-
-    fn request_unlock(&mut self, account: String, count: i64) -> String {
-        let p = json!({ "account": account, "count": count, "confirm": true, "apps": ["kcli_probe"],
-                        "reason": "Doc-test: a few signatures" });
-        self.keep(parse(modules().signer_manager_module.request_unlock(&p.to_string())))
     }
 
     fn outcome(&mut self, handle: String) -> String {

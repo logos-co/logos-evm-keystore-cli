@@ -12,8 +12,7 @@ keystore's one opaque refusal into a sentence that names the fix.
 
 It also decides apps' requests to the [signer manager](https://github.com/logos-co/logos-signer-manager-module)
 once the manager names it a custodian: an app asks to **open** a Bitcoin wallet, and receives its
-descriptors and database key, or asks for an account to stay **unlocked** on terms the person
-decides. The person's own unlocks, locks and closes go through the same calls.
+descriptors and database key. Closing a wallet goes through the same calls.
 
 ## A session
 
@@ -78,10 +77,11 @@ EVM wallet. Pass the documents that carry passwords as `@file`.
 
 The signer manager's custodian methods, relayed as this module: `access_requests`,
 `show_access(handle)` (the manager's `acknowledge_access`), `approve_access` (`{handle, bundle_id,
-group?, password, unlock?}`, as `@file`: a device wallet's first open sets its data password),
-`reject_access(handle)`, `unlock` (`{account, password, ttlMs?, count?, apps, confirm?}`, as
-`@file`), `lock` (`{account?}`, everything for `{}`), `unlocked`, `open_accounts`, `close_account`
-(`{group, module}`).
+group?, password}`, as `@file`: a device wallet's first open sets its data password),
+`reject_access(handle)`, `open_accounts`, `close_account` (`{group, module}`).
+
+Letting an app sign without the password is not a custodian's to grant: allowances belong to the
+signer manager's approvers, `evm_signer_cli` and the Signer app.
 
 Ungated, relayed so one module covers the session: `list_accounts`, `get_labels`,
 `get_group_labels`, `list_groups`, `list_derivation_keys`, `get_provenance`, `list_phrases`,
