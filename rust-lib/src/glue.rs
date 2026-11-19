@@ -63,20 +63,15 @@ pub trait EvmKeystoreCliModule: Send + Sync + 'static {
     /// `{ ok, seed }`.
     fn restore_unlock_root(&self, params_json: String) -> String;
 
-    // The signer manager's custodian: apps' open and unlock requests, and the person's own unlocks.
+    // The signer manager's custodian: apps' requests to open a wallet.
     /// The requests waiting: `{ ok, requests: [{ handle, requester, kind, state, ageMs }] }`.
     fn access_requests(&self) -> String;
     /// Claim one for display: its lines, the commitment to echo, and what was asked.
     fn show_access(&self, handle: String) -> String;
-    /// Decide it: `{ handle, bundle_id, group?, password, unlock? }`, as a file; a device wallet's
-    /// first open sets its data password.
+    /// Decide it: `{ handle, bundle_id, group?, password }`, as a file; a device wallet's first open
+    /// sets its data password.
     fn approve_access(&self, params_json: String) -> String;
     fn reject_access(&self, handle: String) -> String;
-    /// The person's own unlock: `{ account, password, ttlMs?, count?, apps, confirm? }`, as a file.
-    fn unlock(&self, params_json: String) -> String;
-    /// `{ account? }`, everything for `{}`.
-    fn lock(&self, params_json: String) -> String;
-    fn unlocked(&self) -> String;
     fn open_accounts(&self) -> String;
     /// `{ group, module }`: close a wallet opened for an app.
     fn close_account(&self, params_json: String) -> String;
@@ -304,15 +299,6 @@ impl EvmKeystoreCliModule for EvmKeystoreCliModuleImpl {
             Ok(false) => json!({ "ok": false, "error": "reject refused: not the custodian, or no such request" }).to_string(),
             Err(e) => json!({ "ok": false, "error": format!("signer manager unreachable: {e:?}") }).to_string(),
         }
-    }
-    fn unlock(&self, params_json: String) -> String {
-        with_secret_doc(params_json, |doc| relay_manager(modules().signer_manager_module.unlock(doc)))
-    }
-    fn lock(&self, params_json: String) -> String {
-        relay_manager(modules().signer_manager_module.lock(strip_file_newline(&params_json)))
-    }
-    fn unlocked(&self) -> String {
-        relay_manager(modules().signer_manager_module.unlocked())
     }
     fn open_accounts(&self) -> String {
         relay_manager(modules().signer_manager_module.open_accounts())
